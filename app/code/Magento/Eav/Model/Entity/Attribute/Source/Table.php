@@ -35,6 +35,13 @@ class Table extends \Magento\Eav\Model\Entity\Attribute\Source\AbstractSource im
     protected $_attrOptionFactory;
 
     /**
+     * Specific Options array memoization
+     *
+     * @var array
+     */
+    protected $_specificOptions = null;
+
+    /**
      * @var StoreManagerInterface
      */
     private $storeManager;
@@ -100,22 +107,64 @@ class Table extends \Magento\Eav\Model\Entity\Attribute\Source\AbstractSource im
      * Retrieve Option values array by ids
      *
      * @param string|array $ids
-     * @param bool $withEmpty Add empty option to array
+     * @param bool         $withEmpty Add empty option to array
+     *
      * @return array
      */
     public function getSpecificOptions($ids, $withEmpty = true)
     {
-        $options = $this->_attrOptionCollectionFactory->create()
-            ->setPositionOrder('asc')
-            ->setAttributeFilter($this->getAttribute()->getId())
-            ->addFieldToFilter('main_table.option_id', ['in' => $ids])
-            ->setStoreFilter($this->getAttribute()->getStoreId())
-            ->load()
-            ->toOptionArray();
+        $storeId              = $this->getAttribute()->getStoreId();
+        $attributeId          = $this->getAttribute()->getId();
+        $optionsIdsToLoad     = [];
+        $options              = [];
+
+        $optionIds = is_array($ids) ? $ids : [$ids];
+
+        foreach ($optionIds as $optionId) {
+            if (empty($this->_specificOptions[$storeId][$attributeId][$optionId])) {
+                $optionsIdsToLoad[] = $optionId;
+            } else {
+                $options[] = $this->_specificOptions[$storeId][$attributeId][$optionId];
+            }
+        }
+
+        if (!empty($optionsIdsToLoad)) {
+            $loadedOptions = $this->loadSpecificOptions(
+                $attributeId,
+                $optionsIdsToLoad,
+                $storeId);
+
+            array_walk($loadedOptions, function ($loadedOption) use ($storeId, $attributeId, &$options) {
+                $this->_specificOptions[$storeId][$attributeId][$loadedOption['value']] = $loadedOption;
+                $options[] = $loadedOption;
+            });
+        }
+
         if ($withEmpty) {
             $options = $this->addEmptyOption($options);
         }
+
         return $options;
+    }
+
+    /**
+     * @param mixed $attributeId
+     * @param array $optionsIdsToLoad
+     * @param       $storeId
+     *
+     * @return array
+     */
+    protected function loadSpecificOptions(mixed $attributeId, array $optionsIdsToLoad, $storeId): array
+    {
+        return $this->_attrOptionCollectionFactory->create()
+                                                  ->setPositionOrder('asc')
+                                                  ->setAttributeFilter($attributeId)
+                                                  ->addFieldToFilter(
+                                                                'main_table.option_id',
+                                                                ['in' => $optionsIdsToLoad])
+                                                  ->setStoreFilter($storeId)
+                                                  ->load()
+                                                  ->toOptionArray();
     }
 
     /**
