@@ -161,7 +161,7 @@ class Table extends \Magento\Eav\Model\Entity\Attribute\Source\AbstractSource im
                                                   ->setAttributeFilter($attributeId)
                                                   ->addFieldToFilter(
                                                                 'main_table.option_id',
-                                                                ['in' => $optionsIdsToLoad])
+                                                                ['in' => (count($optionsIdsToLoad)>1)?$optionsIdsToLoad:$optionsIdsToLoad[0]])
                                                   ->setStoreFilter($storeId)
                                                   ->load()
                                                   ->toOptionArray();
