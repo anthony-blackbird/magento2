@@ -132,7 +132,8 @@ class Table extends \Magento\Eav\Model\Entity\Attribute\Source\AbstractSource im
             $loadedOptions = $this->loadSpecificOptions(
                 $attributeId,
                 $optionsIdsToLoad,
-                $storeId);
+                $storeId
+            );
 
             array_walk($loadedOptions, function ($loadedOption) use ($storeId, $attributeId, &$options) {
                 $this->_specificOptions[$storeId][$attributeId][$loadedOption['value']] = $loadedOption;
@@ -148,23 +149,26 @@ class Table extends \Magento\Eav\Model\Entity\Attribute\Source\AbstractSource im
     }
 
     /**
+     * Load specific option in DB
+     *
      * @param mixed $attributeId
      * @param array $optionsIdsToLoad
-     * @param       $storeId
+     * @param int $storeId
      *
      * @return array
      */
-    protected function loadSpecificOptions(mixed $attributeId, array $optionsIdsToLoad, $storeId): array
+    protected function loadSpecificOptions(mixed $attributeId, array $optionsIdsToLoad, int $storeId): array
     {
         return $this->_attrOptionCollectionFactory->create()
-                                                  ->setPositionOrder('asc')
-                                                  ->setAttributeFilter($attributeId)
-                                                  ->addFieldToFilter(
-                                                                'main_table.option_id',
-                                                                ['in' => (count($optionsIdsToLoad)>1)?$optionsIdsToLoad:$optionsIdsToLoad[0]])
-                                                  ->setStoreFilter($storeId)
-                                                  ->load()
-                                                  ->toOptionArray();
+            ->setPositionOrder('asc')
+            ->setAttributeFilter($attributeId)
+            ->addFieldToFilter(
+                'main_table.option_id',
+                ['in' => (count($optionsIdsToLoad)>1)?$optionsIdsToLoad:$optionsIdsToLoad[0]]
+            )
+            ->setStoreFilter($storeId)
+            ->load()
+            ->toOptionArray();
     }
 
     /**
